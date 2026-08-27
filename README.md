@@ -80,9 +80,10 @@ wget https://ghproxy.com/https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneC
 # 克隆仓库安装
 git clone https://github.com/lzy1102/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
 
-# 自定义 Reality 伪装目标（GFW 指纹严时切换）
+# 自定义 Reality 伪装目标（GFW 指纹严时切换，默认随机轮询 4 个）
 REALITY_DEST=www.apple.com:443 REALITY_SNI=www.apple.com sudo bash xray-install.sh
-# 可选: www.cloudflare.com / www.amazon.com / www.microsoft.com
+# 可选: www.apple.com / www.microsoft.com / www.cloudflare.com / www.amazon.com（默认随机）
+# 不指定则安装时自动随机选一个
 ```
 
 </details>

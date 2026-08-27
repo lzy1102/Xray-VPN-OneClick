@@ -400,6 +400,12 @@ if [[ -z "$PUBLIC_KEY" ]]; then
     PUBLIC_KEY=$(echo "$KEYS" | grep -E "^Password" | awk -F': ' '{print $NF}' | tr -d ' ')
 fi
 SHORT_ID=$(openssl rand -hex 8)
+# Reality 伪装目标随机轮询（可通过 REALITY_DEST/REALITY_SNI 指定）
+REALITY_DESTS=("www.apple.com:443" "www.microsoft.com:443" "www.cloudflare.com:443" "www.amazon.com:443")
+if [[ -z "$REALITY_DEST" ]]; then
+  REALITY_DEST=${REALITY_DESTS[$RANDOM % ${#REALITY_DESTS[@]}]}
+fi
+REALITY_SNI=${REALITY_SNI:-$(echo "$REALITY_DEST" | cut -d: -f1)}
 
 # 验证密钥生成成功
 if [[ -z "$PRIVATE_KEY" || -z "$PUBLIC_KEY" ]]; then
@@ -413,6 +419,7 @@ echo "UUID: $UUID"
 echo "Private Key: $PRIVATE_KEY"
 echo "Public Key: $PUBLIC_KEY"
 echo "Short ID: $SHORT_ID"
+echo "Reality Dest: $REALITY_DEST (SNI: $REALITY_SNI)"
 
 # 获取服务器 IP（优先 IPv4，回退 IPv6）
 SERVER_IP=""
@@ -510,9 +517,9 @@ cat > /usr/local/etc/xray/config.json <<EOF
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "${REALITY_DEST:-www.microsoft.com:443}",
+          "dest": "$REALITY_DEST",
           "serverNames": [
-            "${REALITY_SNI:-www.microsoft.com}"
+            "$REALITY_SNI"
           ],
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
