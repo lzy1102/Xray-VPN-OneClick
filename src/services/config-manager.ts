@@ -60,7 +60,8 @@ export class ConfigManager {
    */
   async writeConfig(config: XrayConfig): Promise<void> {
     try {
-      // Validate config before writing
+      // 归一化 Reality 再校验
+      this.normalizeRealitySettings(config);
       this.validateConfig(config);
 
       // Ensure directory exists
@@ -111,12 +112,54 @@ export class ConfigManager {
       if (typeof inbound.port !== 'number') {
         throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, 'inbound 缺少有效 port');
       }
+      // Reality 专用校验
+      const reality = (inbound as unknown as { streamSettings?: { realitySettings?: Record<string, unknown> } })
+        .streamSettings?.realitySettings;
+      if (reality) {
+        const dest = reality['dest'] as string | undefined;
+        const serverNames = reality['serverNames'] as string[] | undefined;
+        const privateKey = reality['privateKey'] as string | undefined;
+        const shortIds = reality['shortIds'] as string[] | undefined;
+        if (dest && !/^.+\:\d+$/.test(dest)) {
+          throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, `reality dest 格式错误: ${dest}`);
+        }
+        if (serverNames && (!Array.isArray(serverNames) || serverNames.length === 0)) {
+          throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, 'reality serverNames 不能为空');
+        }
+        if (privateKey && !/^[A-Za-z0-9_-]{43}$/.test(privateKey)) {
+          throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, 'reality privateKey 格式错误');
+        }
+        if (shortIds) {
+          const validIds = shortIds.filter((s) => s && /^[0-9a-fA-F]+$/.test(s) && s.length % 2 === 0);
+          if (validIds.length === 0 && shortIds.length > 0) {
+            throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, 'reality shortIds 全部无效（需偶数长度 hex）');
+          }
+        }
+      }
     }
 
     // Validate outbounds
     for (const outbound of config.outbounds) {
       if (!outbound.protocol) {
         throw new ConfigError(ConfigErrors.CONFIG_INVALID_STRUCTURE, 'outbound 缺少 protocol');
+      }
+    }
+  }
+
+  /**
+   * 归一化 Reality 配置：过滤空 shortId、补全 maxTimeDiff
+   */
+  normalizeRealitySettings(config: XrayConfig): void {
+    for (const inbound of config.inbounds || []) {
+      const rs = (inbound as unknown as { streamSettings?: { realitySettings?: Record<string, unknown> } })
+        .streamSettings?.realitySettings;
+      if (rs) {
+        if (Array.isArray(rs['shortIds'])) {
+          rs['shortIds'] = (rs['shortIds'] as string[]).filter((s) => s && s.length >= 4);
+        }
+        if (rs['maxTimeDiff'] === undefined) {
+          rs['maxTimeDiff'] = 86400;
+        }
       }
     }
   }

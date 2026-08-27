@@ -510,16 +510,15 @@ cat > /usr/local/etc/xray/config.json <<EOF
         "security": "reality",
         "realitySettings": {
           "show": false,
-          "dest": "www.microsoft.com:443",
-          "xver": 0,
+          "dest": "${REALITY_DEST:-www.microsoft.com:443}",
           "serverNames": [
-            "www.microsoft.com"
+            "${REALITY_SNI:-www.microsoft.com}"
           ],
           "privateKey": "$PRIVATE_KEY",
           "shortIds": [
-            "$SHORT_ID",
-            ""
-          ]
+            "$SHORT_ID"
+          ],
+          "maxTimeDiff": 86400
         }
       },
       "sniffing": {

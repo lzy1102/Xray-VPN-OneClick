@@ -167,8 +167,14 @@ export interface TlsSettings {
  * Reality 协议配置（新型伪装协议）
  */
 export interface RealitySettings {
+  /** 是否显示 Reality 调试信息 */
+  show?: boolean;
+
   /** 目标网站地址（用于伪装） */
   dest: string;
+
+  /** PROXY protocol 版本（0=关闭） */
+  xver?: number;
 
   /** 服务器名称列表 */
   serverNames: string[];
@@ -176,7 +182,7 @@ export interface RealitySettings {
   /** 私钥 */
   privateKey: string;
 
-  /** 短 ID 列表 */
+  /** 短 ID 列表（建议单 ID，避免空字符串） */
   shortIds: string[];
 
   /** 最小客户端版本 */
@@ -185,8 +191,11 @@ export interface RealitySettings {
   /** 最大客户端版本 */
   maxClientVer?: string;
 
-  /** 最大时间差（秒） */
+  /** 最大时间差（秒），默认 0，跨时区建议 86400 */
   maxTimeDiff?: number;
+
+  /** 蜘蛛路径，用于回落请求 */
+  spiderX?: string;
 }
 
 /**

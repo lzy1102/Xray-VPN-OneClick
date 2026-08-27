@@ -64,21 +64,25 @@
 
 ```bash
 # 一键安装 Xray + VLESS + Reality（复制粘贴即可）
-wget https://raw.githubusercontent.com/DanOps-1/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
+wget https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
 ```
 
 <details>
-<summary>📦 其他安装方式（npm / 国内加速 / git clone）</summary>
+<summary>📦 其他安装方式（npm / 国内加速 / git clone / 自定义伪装目标）</summary>
 
 ```bash
 # npm 全局安装（需要 Node.js 18+）
 npm install -g xray-manager && sudo xm install
 
 # 国内服务器加速
-wget https://ghproxy.com/https://raw.githubusercontent.com/DanOps-1/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
+wget https://ghproxy.com/https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
 
 # 克隆仓库安装
-git clone https://github.com/DanOps-1/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
+git clone https://github.com/lzy1102/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
+
+# 自定义 Reality 伪装目标（GFW 指纹严时切换）
+REALITY_DEST=www.apple.com:443 REALITY_SNI=www.apple.com sudo bash xray-install.sh
+# 可选: www.cloudflare.com / www.amazon.com / www.microsoft.com
 ```
 
 </details>

@@ -24,6 +24,12 @@ export interface PreflightOptions {
   /** Check if config file exists and is readable */
   checkConfig?: boolean;
 
+  /** Check system time sync */
+  checkTimeSync?: boolean;
+
+  /** Check if Reality dest is reachable */
+  checkDest?: string;
+
   /** Config file path (if checking) */
   configPath?: string;
 
@@ -56,6 +62,8 @@ export interface PreflightResult {
     xray?: boolean;
     config?: boolean;
     permissions?: boolean;
+    timeSync?: boolean;
+    destReachable?: boolean;
   };
 }
 
@@ -181,6 +189,45 @@ function checkPermissions(): { passed: boolean; warning?: string } {
 }
 
 /**
+ * Check if system time is synchronized (important for Reality maxTimeDiff)
+ */
+async function checkTimeSync(): Promise<{ passed: boolean; warning?: string }> {
+  return new Promise((resolve) => {
+    const child = spawn('timedatectl', ['status'], { timeout: 3000 });
+    let stdout = '';
+    child.stdout?.on('data', (d) => (stdout += d.toString()));
+    child.on('close', () => {
+      if (stdout.includes('System clock synchronized: yes') || stdout.includes('NTP service: active')) {
+        resolve({ passed: true });
+      } else if (stdout.includes('System clock synchronized: no')) {
+        resolve({ passed: false, warning: '系统时间未同步，可能导致 Reality 握手失败（maxTimeDiff）' });
+      } else {
+        // timedatectl not available or no info, treat as passed
+        resolve({ passed: true });
+      }
+    });
+    child.on('error', () => resolve({ passed: true }));
+  });
+}
+
+/**
+ * Check if Reality dest is reachable (TCP 443)
+ */
+async function checkDestReachable(dest: string): Promise<{ passed: boolean; warning?: string }> {
+  const host = dest.split(':')[0];
+  return new Promise((resolve) => {
+    const child = spawn('curl', ['-I', '--connect-timeout', '3', `https://${host}`], { timeout: 5000 });
+    let stderr = '';
+    child.stderr?.on('data', (d) => (stderr += d.toString()));
+    child.on('close', (code) => {
+      if (code === 0) resolve({ passed: true });
+      else resolve({ passed: false, warning: `Reality dest ${dest} 不可达: ${stderr.slice(0, 100)}` });
+    });
+    child.on('error', () => resolve({ passed: false, warning: `无法检测 dest ${dest} 连通性` }));
+  });
+}
+
+/**
  * Perform all preflight checks
  */
 export async function preflightChecks(options: PreflightOptions = {}): Promise<PreflightResult> {
@@ -255,6 +302,26 @@ export async function preflightChecks(options: PreflightOptions = {}): Promise<P
 
   if (permResult.warning) {
     result.warnings.push(permResult.warning);
+  }
+
+  // Check time sync (Reality 依赖时间，默认 maxTimeDiff 86400 跨时区)
+  if (options.checkTimeSync) {
+    const timeResult = await checkTimeSync();
+    result.checks.timeSync = timeResult.passed;
+    if (!timeResult.passed && timeResult.warning) {
+      result.warnings.push(timeResult.warning);
+      result.suggestions.push('执行: timedatectl set-ntp true 或 ntpdate -u pool.ntp.org');
+    }
+  }
+
+  // Check Reality dest reachability
+  if (options.checkDest) {
+    const destResult = await checkDestReachable(options.checkDest);
+    result.checks.destReachable = destResult.passed;
+    if (!destResult.passed && destResult.warning) {
+      result.warnings.push(destResult.warning);
+      result.suggestions.push(`更换 Reality dest: REALITY_DEST=www.cloudflare.com:443 bash scripts/install.sh`);
+    }
   }
 
   return result;

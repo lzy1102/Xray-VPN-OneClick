@@ -404,7 +404,8 @@ export class UserManager {
       // Generate public key from private key
       publicKey = generatePublicKeyFromPrivate(reality.privateKey);
       serverName = reality.serverNames[0] || 'www.microsoft.com';
-      shortId = reality.shortIds[0] || '';
+      // 过滤空 shortId，兼容旧配置 ["xxx",""]
+      shortId = (reality.shortIds || []).find((s) => s && s.length >= 4) || '';
 
       const params = new URLSearchParams();
       params.set('encryption', 'none');
