@@ -15,7 +15,7 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 # Supported distributions and minimum versions
 declare -A SUPPORTED_DISTROS=(
-    ["ubuntu"]="22.04"
+    ["ubuntu"]="20.04"
     ["debian"]="11"
     ["kali"]="2023"
     ["centos"]="9"
