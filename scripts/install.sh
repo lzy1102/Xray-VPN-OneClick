@@ -400,10 +400,9 @@ if [[ -z "$PUBLIC_KEY" ]]; then
     PUBLIC_KEY=$(echo "$KEYS" | grep -E "^Password" | awk -F': ' '{print $NF}' | tr -d ' ')
 fi
 SHORT_ID=$(openssl rand -hex 8)
-# Reality 伪装目标随机轮询（可通过 REALITY_DEST/REALITY_SNI 指定）
-REALITY_DESTS=("www.apple.com:443" "www.microsoft.com:443" "www.cloudflare.com:443" "www.amazon.com:443")
+# Reality 伪装目标（可通过 REALITY_DEST/REALITY_SNI 指定，默认 cloudflare 最稳）
 if [[ -z "$REALITY_DEST" ]]; then
-  REALITY_DEST=${REALITY_DESTS[$RANDOM % ${#REALITY_DESTS[@]}]}
+  REALITY_DEST="www.cloudflare.com:443"
 fi
 REALITY_SNI=${REALITY_SNI:-$(echo "$REALITY_DEST" | cut -d: -f1)}
 
