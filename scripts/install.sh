@@ -703,11 +703,11 @@ if systemctl is-active --quiet xray; then
   echo "UUID: $UUID"
   echo "Public Key: $PUBLIC_KEY"
   echo "Short ID: $SHORT_ID"
-  echo "SNI: www.microsoft.com"
+  echo "SNI: $REALITY_SNI"
   echo "Flow: xtls-rprx-vision"
   echo ""
   echo "📱 分享链接："
-  SHARE_LINK="vless://${UUID}@${SERVER_HOST_URL}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.microsoft.com&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
+  SHARE_LINK="vless://${UUID}@${SERVER_HOST_URL}:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${REALITY_SNI}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#Xray-Reality"
   echo "$SHARE_LINK"
   echo ""
   echo "配置信息已保存到: /root/xray-info.txt"
@@ -727,7 +727,7 @@ Xray 配置信息
 - UUID: $UUID
 - Public Key: $PUBLIC_KEY
 - Short ID: $SHORT_ID
-- SNI: www.microsoft.com
+- SNI: $REALITY_SNI
 - Flow: xtls-rprx-vision
 - Fingerprint: chrome
 
