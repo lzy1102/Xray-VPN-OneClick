@@ -1,0 +1,57 @@
+# Xray-VPN-OneClick Docker 编排
+# 快速启动: docker compose up -d xray && docker logs xray-reality
+# 自定义:   cp docker/.env.example .env && vim .env && docker compose up -d
+# 管理工具: docker compose --profile tools run --rm -it manager
+#
+# 说明:
+# - xray 服务首次启动自动生成 UUID/密钥/ShortID 并持久化到 xray-config 卷，
+#   重启复用同一配置（链接不变）。设 REUSE_CONFIG=false 可重新生成。
+# - HOST_PORT 与容器端口不一致时，把 PUBLIC_PORT 设成宿主机端口，保证分享链接正确。
+# - 云服务商安全组需放行 HOST_PORT（默认 443/TCP）。
+# - manager 在容器内无法 systemctl，需 --config 指向挂载的配置；
+#   用 manager 改完配置后执行 docker compose restart xray 生效。
+
+services:
+  xray:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.xray
+    image: xray-vpn-oneclick-xray:latest
+    container_name: xray-reality
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-443}:443"
+    environment:
+      XRAY_PORT: 443
+      PUBLIC_PORT: "${HOST_PORT:-443}"
+      UUID: "${UUID:-}"
+      PRIVATE_KEY: "${PRIVATE_KEY:-}"
+      PUBLIC_KEY: "${PUBLIC_KEY:-}"
+      SHORT_ID: "${SHORT_ID:-}"
+      SERVER_IP: "${SERVER_IP:-}"
+      REALITY_DEST: "${REALITY_DEST:-www.cloudflare.com:443}"
+      REALITY_SNI: "${REALITY_SNI:-}"
+      REUSE_CONFIG: "${REUSE_CONFIG:-true}"
+    volumes:
+      - xray-config:/etc/xray
+      - xray-logs:/var/log/xray
+
+  # 管理工具（TUI/CLI），按需启动，不随 up 默认启动
+  manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xray-vpn-oneclick-manager:latest
+    profiles: ["tools"]
+    stdin_open: true
+    tty: true
+    volumes:
+      - xray-config:/usr/local/etc/xray
+      - xray-logs:/var/log/xray
+      - manager-data:/root/.xray-manager
+    command: ["--config", "/usr/local/etc/xray/config.json"]
+
+volumes:
+  xray-config:
+  xray-logs:
+  manager-data:

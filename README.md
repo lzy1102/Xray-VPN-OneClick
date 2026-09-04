@@ -63,8 +63,11 @@
 ## ⚡ 30秒快速安装
 
 ```bash
-# 一键安装 Xray + VLESS + Reality（复制粘贴即可）
+# 方式一：一键安装到宿主机 Xray + VLESS + Reality（复制粘贴即可）
 wget https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneClick/main/scripts/install.sh -O xray-install.sh && sudo bash xray-install.sh
+
+# 方式二：一键 Docker 部署（自动装 Docker → 构建镜像 → 启动，打印分享链接）
+wget https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneClick/main/scripts/docker-install.sh -O xray-docker-install.sh && sudo bash xray-docker-install.sh
 ```
 
 <details>
@@ -80,10 +83,15 @@ wget https://ghproxy.com/https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneC
 # 克隆仓库安装
 git clone https://github.com/lzy1102/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick/scripts && sudo bash install.sh
 
-# 自定义 Reality 伪装目标（GFW 指纹严时切换，默认随机轮询 4 个）
+# 自定义 Reality 伪装目标（GFW 指纹严时切换，默认 www.cloudflare.com 最稳）
 REALITY_DEST=www.apple.com:443 REALITY_SNI=www.apple.com sudo bash xray-install.sh
-# 可选: www.apple.com / www.microsoft.com / www.cloudflare.com / www.amazon.com（默认随机）
-# 不指定则安装时自动随机选一个
+# 可选: www.cloudflare.com / www.apple.com / www.microsoft.com / www.amazon.com（默认 cloudflare）
+# 不指定则使用 www.cloudflare.com:443
+
+# 🐳 Docker 部署（免装依赖，配置自动生成并持久化）
+git clone https://github.com/lzy1102/Xray-VPN-OneClick.git && cd Xray-VPN-OneClick
+docker compose up -d xray && docker logs xray-reality  # 启动后打印分享链接
+# 管理工具容器（免装 Node.js）: docker compose --profile tools run --rm -it manager
 ```
 
 </details>

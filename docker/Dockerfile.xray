@@ -1,0 +1,47 @@
+# Xray 服务端镜像（VLESS + XTLS-Reality）
+# 构建: docker build -f docker/Dockerfile.xray -t xray-reality .
+# 运行: docker run -d --name xray -p 443:443 -v xray-config:/etc/xray xray-reality
+#
+# 环境变量（全部可选，未提供则首次启动自动生成并持久化到 /etc/xray/config.json）：
+#   UUID          客户端 UUID（默认自动生成）
+#   PRIVATE_KEY   Reality 私钥（默认用 xray x25519 自动生成）
+#   PUBLIC_KEY    与 PRIVATE_KEY 配对的公钥（只在提供 PRIVATE_KEY 时需要）
+#   SHORT_ID      Reality Short ID（默认 openssl 随机 8 字节 hex）
+#   XRAY_PORT     容器内监听端口（默认 443）
+#   PUBLIC_PORT   分享链接中的端口（宿主机映射端口与容器不一致时设置，默认跟随 XRAY_PORT）
+#   SERVER_IP     分享链接中的地址（默认自动探测公网 IP，失败则用 YOUR_SERVER_IP 占位）
+#   REALITY_DEST  伪装目标（默认 www.cloudflare.com:443）
+#   REALITY_SNI   伪装 SNI（默认从 REALITY_DEST 派生）
+#   REUSE_CONFIG  设为 false 则忽略已有的 /etc/xray/config.json 并重新生成（默认 true）
+
+ARG XRAY_VERSION=v26.3.27
+
+FROM alpine:3.20 AS downloader
+ARG XRAY_VERSION
+ARG TARGETARCH
+RUN apk add --no-cache curl unzip && \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) XRAY_ARCH="64" ;; \
+      arm64) XRAY_ARCH="arm64-v8a" ;; \
+      arm)   XRAY_ARCH="arm32-v7a" ;; \
+      *)     echo "unsupported arch: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac && \
+    if [ "${XRAY_VERSION}" = "latest" ]; then \
+      XRAY_VERSION="$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/XTLS/Xray-core/releases/latest | grep -o '[^/]*$')"; \
+    fi && \
+    echo "Downloading Xray-core ${XRAY_VERSION} for linux-${XRAY_ARCH}" && \
+    curl -fsSL "https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/Xray-linux-${XRAY_ARCH}.zip" -o /tmp/xray.zip && \
+    unzip -q /tmp/xray.zip -d /tmp/xray && \
+    chmod +x /tmp/xray/xray && \
+    /tmp/xray/xray version
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates curl openssl uuidgen && \
+    mkdir -p /etc/xray /var/log/xray
+COPY --from=downloader /tmp/xray/xray /usr/local/bin/xray
+COPY --from=downloader /tmp/xray/geoip.dat /tmp/xray/geosite.dat /usr/local/bin/
+COPY docker/entrypoint-xray.sh /usr/local/bin/entrypoint-xray.sh
+RUN chmod +x /usr/local/bin/entrypoint-xray.sh
+VOLUME ["/etc/xray", "/var/log/xray"]
+EXPOSE 443
+ENTRYPOINT ["/usr/local/bin/entrypoint-xray.sh"]

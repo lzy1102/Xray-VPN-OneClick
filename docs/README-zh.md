@@ -22,7 +22,7 @@
 - 📚 **详细文档** - 完整的中英文安装、配置和故障排查指南
 - 🛠️ **管理工具** - 提供用户管理、服务更新、配置备份等便捷工具
 - 🌍 **多语言** - 支持中英文文档和脚本输出
-- 🐳 **Docker 支持（外部镜像）** - 本仓库不提供 Dockerfile，仅提供外部镜像示例
+- 🐳 **Docker 支持** - Xray 服务端与管理工具均提供镜像，一键 compose 部署
 
 ---
 
@@ -236,42 +236,67 @@ sudo dpkg-reconfigure --priority=low unattended-upgrades
 
 ---
 
-## 🐳 Docker 部署（外部镜像）
+## 🐳 Docker 部署
 
-本仓库暂不提供 Dockerfile 或 docker-compose 文件，以下命令仅为外部镜像示例。
-实际参数与镜像维护状态请以镜像文档为准。
-
-### 使用 Docker 部署
+### 一键 Docker 安装（推荐，复制粘贴即可）
 
 ```bash
-# 拉取外部镜像（示例）
-docker pull danops/xray-reality
+wget https://raw.githubusercontent.com/lzy1102/Xray-VPN-OneClick/main/scripts/docker-install.sh -O xray-docker-install.sh && sudo bash xray-docker-install.sh
+```
 
-# 运行容器
-docker run -d \
-  --name xray \
-  -p 443:443 \
-  -v /etc/xray:/etc/xray \
-  --restart=unless-stopped \
-  danops/xray-reality
+脚本自动安装 Docker、构建镜像、启动容器并打印分享链接。自定义示例：
+
+```bash
+# 换伪装目标 / 端口
+REALITY_DEST=www.apple.com:443 HOST_PORT=8443 sudo bash xray-docker-install.sh
+# 国内服务器 Docker 安装加速
+DOCKER_INSTALL_URL=https://ghproxy.com/https://get.docker.com sudo bash xray-docker-install.sh
 ```
 
 ### 使用 Docker Compose
 
-```yaml
-version: '3'
-services:
-  xray:
-    image: danops/xray-reality
-    container_name: xray
-    restart: unless-stopped
-    ports:
-      - "443:443"
-    volumes:
-      - ./config:/etc/xray
+```bash
+git clone https://github.com/lzy1102/Xray-VPN-OneClick.git
+cd Xray-VPN-OneClick
+
+# 启动 Xray（首次自动生成 UUID/密钥/ShortID，持久化在 xray-config 卷中）
+docker compose up -d xray
+
+# 查看分享链接
+docker logs xray-reality
+# 或
+docker exec xray-reality cat /etc/xray/xray-info.txt
 ```
 
-详细说明：请参考镜像维护方文档
+自定义配置（端口/伪装目标/固定密钥）：
+
+```bash
+cp docker/.env.example .env && vim .env
+docker compose up -d xray
+```
+
+### 只用 Docker 运行 Xray（免 compose）
+
+```bash
+docker build -f docker/Dockerfile.xray -t xray-reality .
+docker run -d --name xray-reality -p 443:443 \
+  -v xray-config:/etc/xray \
+  --restart=unless-stopped \
+  xray-reality
+docker logs -f xray-reality  # 启动后打印分享链接
+```
+
+### 管理工具容器（免装 Node.js）
+
+```bash
+# TUI（需 -it；挂载同一配置卷后，用 manager 改完配置要 restart xray 生效）
+docker compose --profile tools run --rm -it manager
+# 或单容器
+docker build -t xray-manager .
+docker run -it --rm -v xray-config:/usr/local/etc/xray xray-manager --config /usr/local/etc/xray/config.json
+```
+
+> 注意：云服务商安全组需放行映射端口（默认 443/TCP）；宿主机映射端口与容器端口不一致时，把 `.env` 中的 `HOST_PORT` 设成宿主机端口，保证分享链接正确。
 
 ---
 
